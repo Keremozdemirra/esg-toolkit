@@ -1,0 +1,11 @@
+name,capex,opex,abatement,lifetime,excludes,requires
+LED lighting retrofit,180000,-46000,310,12,,
+Compressed air leak repair,25000,-19000,140,5,,
+Building envelope insulation,640000,-58000,520,25,,
+Variable speed drives,210000,-31000,240,15,,
+Heat pump replacing gas boiler,1450000,-42000,1850,20,Gas boiler efficiency upgrade,Building envelope insulation
+Gas boiler efficiency upgrade,180000,-14000,260,12,Heat pump replacing gas boiler,
+Rooftop solar PV,2100000,-138000,1420,25,,
+On-site battery storage,980000,-21000,190,15,,Rooftop solar PV
+Process electrification,3800000,95000,2600,20,,
+Green hydrogen for process heat,6200000,410000,1900,20,,Process electrification

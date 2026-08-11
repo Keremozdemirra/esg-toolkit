@@ -19,13 +19,13 @@ Rules of thumb applied to every item:
 
 - [x] **001 — carbon-bridge** · Additive LMDI-I decomposition of an emissions change into activity, mix, intensity and emission-factor effects. 37 tests, zero dependencies.
 - [x] **002 — target-path** · Absolute-contraction and intensity-convergence pathways, gap assessment, rebased required rate, cumulative budget. 27 tests, zero dependencies.
+- [x] **003 — marginal-abatement** · Levelised cost of abatement, cost curve, carbon-price unlocking, and a constrained greedy solver with its suboptimality documented and tested. 35 tests, zero dependencies.
 
 ## Queue
 
 ### Emissions and energy
 
 - [ ] **003 — scope2-dual** · Location-based vs market-based Scope 2 accounting side by side, with contractual instruments (PPAs, RECs, GOs) applied under GHG Protocol Scope 2 Guidance quality criteria.
-- [ ] **004 — marginal-abatement** · Build a MACC from a list of abatement measures: cost per tonne, cumulative abatement curve, and the ordering that actually clears a target at least cost.
 - [ ] **005 — energy-baseline** · Weather-normalise energy consumption against heating and cooling degree days so efficiency claims survive a mild winter.
 - [ ] **006 — grid-intensity** · Time-matched vs annual-matched clean electricity accounting: hourly load against hourly grid intensity, and what 24/7 matching would actually cost.
 - [ ] **007 — fleet-transition** · Total cost of ownership and abatement for replacing a vehicle fleet, with residual value, charging infrastructure and duty-cycle constraints.

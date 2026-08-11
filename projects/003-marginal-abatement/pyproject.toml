@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "marginal-abatement"
+version = "0.1.0"
+description = "Build marginal abatement cost curves, find the cheapest route to a target, and see what a carbon price unlocks."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+keywords = ["macc", "abatement", "carbon", "decarbonisation", "esg"]
+dependencies = []
+
+[project.scripts]
+macc = "marginal_abatement.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["marginal_abatement*"]

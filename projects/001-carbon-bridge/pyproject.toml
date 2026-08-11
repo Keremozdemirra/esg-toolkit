@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "carbon-bridge"
+version = "0.1.0"
+description = "Attribute a change in greenhouse gas emissions to activity, mix, energy intensity and emission factor effects (additive LMDI-I)."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+keywords = ["emissions", "ghg", "lmdi", "decomposition", "sustainability", "esg"]
+dependencies = []
+
+[project.scripts]
+carbon-bridge = "carbon_bridge.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["carbon_bridge*"]

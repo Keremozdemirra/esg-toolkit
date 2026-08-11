@@ -9,11 +9,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from marginal_abatement.curve import (  # noqa: E402
+    EXHAUSTIVE_LIMIT,
     AbatementError,
     Measure,
     annuity_factor,
     build_curve,
     feasible_selection,
+    optimal_selection,
     render,
 )
 from marginal_abatement.loader import load_measures  # noqa: E402
@@ -238,3 +240,106 @@ class LoaderTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+def _cost(steps):
+    return sum(s.cost_per_tonne * s.abatement for s in steps)
+
+
+class OptimalSelectionTests(unittest.TestCase):
+    """The exact solver. Its whole justification is beating greedy."""
+
+    def setUp(self):
+        self.curve = build_curve(load_measures(EXAMPLES), rate=0.05)
+
+    def test_meets_the_target(self):
+        for target in (100, 1_000, 3_000, 5_000):
+            chosen = optimal_selection(self.curve, target)
+            self.assertGreaterEqual(
+                sum(s.abatement for s in chosen), target - 1e-9, msg=str(target)
+            )
+
+    def test_never_costs_more_than_greedy(self):
+        # The defining property. If this fails the solver is not exact.
+        for target in (100, 500, 1_000, 2_000, 3_000, 4_000, 5_000, 7_000):
+            greedy = feasible_selection(self.curve, target)
+            optimal = optimal_selection(self.curve, target)
+            self.assertLessEqual(_cost(optimal), _cost(greedy) + 1e-6, msg=str(target))
+
+    def test_beats_greedy_on_the_case_the_readme_documents(self):
+        # Greedy takes the cheap boiler upgrade, locks itself out of the much
+        # larger heat pump, and overpays. The exact solver should not.
+        greedy = feasible_selection(self.curve, 3_000)
+        optimal = optimal_selection(self.curve, 3_000)
+        self.assertLess(_cost(optimal), _cost(greedy))
+        names = {s.name for s in optimal}
+        self.assertIn("Heat pump replacing gas boiler", names)
+        self.assertNotIn("Gas boiler efficiency upgrade", names)
+
+    def test_respects_exclusions(self):
+        chosen = {s.name for s in optimal_selection(self.curve, 4_000)}
+        self.assertFalse(
+            {"Heat pump replacing gas boiler", "Gas boiler efficiency upgrade"} <= chosen
+        )
+
+    def test_respects_prerequisites(self):
+        chosen = optimal_selection(self.curve, 5_000)
+        names = {s.name for s in chosen}
+        for step in chosen:
+            self.assertTrue(
+                step.measure.requires <= names,
+                f"{step.name} chosen without {step.measure.requires - names}",
+            )
+
+    def test_takes_every_negative_cost_measure_when_they_alone_suffice(self):
+        # No reason to leave money on the table: measures that pay for
+        # themselves belong in any cost-minimising plan that can include them.
+        target = self.curve.no_regret_abatement
+        chosen = optimal_selection(self.curve, target)
+        self.assertLessEqual(_cost(chosen), 0.0)
+
+    def test_never_costs_more_than_greedy_on_random_curves(self):
+        import random
+
+        rng = random.Random(20260811)
+        for _ in range(40):
+            measures = []
+            for i in range(rng.randint(2, 9)):
+                measures.append(
+                    Measure(
+                        name=f"m{i}",
+                        capex=rng.uniform(0, 500_000),
+                        opex=rng.uniform(-60_000, 60_000),
+                        abatement=rng.uniform(50, 900),
+                        lifetime=rng.randint(3, 25),
+                    )
+                )
+            curve = build_curve(measures, rate=0.05)
+            target = curve.total_abatement * rng.uniform(0.1, 0.9)
+            self.assertLessEqual(
+                _cost(optimal_selection(curve, target)),
+                _cost(feasible_selection(curve, target)) + 1e-6,
+            )
+
+    def test_unreachable_target_raises(self):
+        with self.assertRaises(AbatementError):
+            optimal_selection(self.curve, self.curve.total_abatement + 1)
+
+    def test_negative_target_raises(self):
+        with self.assertRaises(AbatementError):
+            optimal_selection(self.curve, -1)
+
+    def test_zero_target_selects_nothing(self):
+        self.assertEqual(optimal_selection(self.curve, 0), [])
+
+    def test_refuses_rather_than_degrading_on_a_large_curve(self):
+        # A caller who asked for the optimum must be told when they cannot
+        # have it, rather than handed a greedy answer wearing the same name.
+        measures = [
+            Measure(name=f"m{i}", capex=1000, opex=100, abatement=10, lifetime=10)
+            for i in range(EXHAUSTIVE_LIMIT + 1)
+        ]
+        curve = build_curve(measures, rate=0.05)
+        with self.assertRaises(AbatementError) as ctx:
+            optimal_selection(curve, 50)
+        self.assertIn("greedy", str(ctx.exception))

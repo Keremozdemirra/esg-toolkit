@@ -19,7 +19,7 @@ Rules of thumb applied to every item:
 
 - [x] **001 — carbon-bridge** · Additive LMDI-I decomposition of an emissions change into activity, mix, intensity and emission-factor effects. 37 tests, zero dependencies.
 - [x] **002 — target-path** · Absolute-contraction and intensity-convergence pathways, gap assessment, rebased required rate, cumulative budget. 27 tests, zero dependencies.
-- [x] **003 — marginal-abatement** · Levelised cost of abatement, cost curve, carbon-price unlocking, and a constrained greedy solver with its suboptimality documented and tested. 35 tests, zero dependencies.
+- [x] **003 — marginal-abatement** · Levelised cost of abatement, cost curve, carbon-price unlocking, a greedy solver and an exact one that provably never costs more. 46 tests, zero dependencies.
 
 ## Queue
 

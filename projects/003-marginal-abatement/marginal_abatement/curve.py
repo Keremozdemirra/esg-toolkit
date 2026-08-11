@@ -282,3 +282,86 @@ def render(curve: Curve, currency: str = "EUR", width: int = 30) -> str:
         f"  Cost of the full curve   {curve.annual_cost():>12,.0f} {currency}/yr",
     ]
     return "\n".join(lines)
+
+
+# --- exact selection -------------------------------------------------------
+#
+# feasible_selection above is greedy, and the README walks through a case in
+# the example data where greedy loses: it takes a cheap boiler upgrade, which
+# excludes a much larger heat pump, and then has to buy expensive abatement to
+# make up the shortfall. Documenting that was honest but unsatisfying, so the
+# exact solver lives here.
+
+EXHAUSTIVE_LIMIT = 22
+
+
+def optimal_selection(curve: Curve, tonnes: float) -> list[Step]:
+    """Cheapest feasible set of whole measures meeting a target.
+
+    Exhaustive over subsets with pruning, so the answer is exact rather than
+    greedy. This is a set-cover-with-conflicts problem and is NP-hard in
+    general; the exhaustive route is only viable because real MACCs are small.
+    Above ``EXHAUSTIVE_LIMIT`` measures it raises rather than silently
+    degrading to greedy, because a caller who asked for the optimum should be
+    told when they are not getting it.
+
+    Returns the chosen steps in cost order. Ties are broken toward fewer
+    measures, on the view that a plan with fewer moving parts is easier to
+    deliver at the same cost.
+    """
+    if tonnes < 0:
+        raise AbatementError("target abatement cannot be negative")
+    n = len(curve.steps)
+    if n > EXHAUSTIVE_LIMIT:
+        raise AbatementError(
+            f"exact selection over {n} measures is not tractable here "
+            f"(limit {EXHAUSTIVE_LIMIT}); use feasible_selection for a greedy "
+            "answer, and note in your write-up that it is approximate"
+        )
+
+    steps = list(curve.steps)
+    best: tuple[float, int, tuple[int, ...]] | None = None
+
+    # Suffix sums let us abandon a branch as soon as the abatement still
+    # available cannot close the remaining gap.
+    remaining_available = [0.0] * (n + 1)
+    for i in range(n - 1, -1, -1):
+        remaining_available[i] = remaining_available[i + 1] + steps[i].abatement
+
+    def recurse(i: int, taken: tuple[int, ...], blocked: frozenset[str],
+                abated: float, cost: float) -> None:
+        nonlocal best
+        if abated >= tonnes - 1e-9:
+            candidate = (cost, len(taken), taken)
+            if best is None or candidate < best:
+                best = candidate
+            return
+        if i >= n or abated + remaining_available[i] < tonnes - 1e-9:
+            return
+        # Cost can fall as measures are added (negative-cost measures), so the
+        # only sound bound is the one above; no cost-based pruning here.
+        if best is not None and cost >= best[0] and all(
+            steps[j].cost_per_tonne >= 0 for j in range(i, n)
+        ):
+            return
+
+        step = steps[i]
+        m = step.measure
+        if m.name not in blocked and m.requires <= {steps[j].measure.name for j in taken}:
+            recurse(
+                i + 1,
+                taken + (i,),
+                blocked | m.excludes,
+                abated + step.abatement,
+                cost + step.cost_per_tonne * step.abatement,
+            )
+        recurse(i + 1, taken, blocked, abated, cost)
+
+    recurse(0, (), frozenset(), 0.0, 0.0)
+
+    if best is None:
+        raise AbatementError(
+            f"cannot reach {tonnes:,.0f} t with any feasible combination of "
+            "measures under the stated constraints"
+        )
+    return [steps[i] for i in best[2]]

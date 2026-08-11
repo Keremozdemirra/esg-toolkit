@@ -83,13 +83,29 @@ The solver took a cheap 260-tonne boiler upgrade, which excluded the heat pump �
 153.8/t to make up the difference. A better plan exists and greedy did not find
 it.
 
-This is honest output, not a bug being papered over. With mutually exclusive
-options the problem is a knapsack, and greedy is only an approximation.
-The approximation is documented and testable rather than hidden, on the view
-that a MACC's input uncertainty — capex estimates, energy prices, assumed
-lifetimes — is usually far larger than the gap to the true optimum. If your
-exclusions are load-bearing, read the returned measure list rather than
-trusting the total.
+With mutually exclusive options this is a set-cover-with-conflicts problem and
+greedy is only an approximation.
+
+`optimal_selection` solves it exactly, and on this data the gap is not small:
+
+| Target | Greedy | Optimal | Saving |
+| ---: | ---: | ---: | ---: |
+| 3,000 t | 354,955 | 12,076 | 97% |
+| 5,000 t | 354,955 | 348,646 | 2% |
+| 7,000 t | 1,335,874 | 422,998 | 68% |
+
+At 3,000 t the optimal plan simply skips the boiler upgrade and takes the heat
+pump, which is obvious in hindsight and invisible to a cost-ordered walk.
+
+The exact solver is exhaustive with pruning and is only viable because real
+MACCs are small. Above 22 measures it **raises rather than quietly falling back
+to greedy** — a caller who asked for the optimum should be told when they are
+not getting it. Use `feasible_selection` when you want the greedy answer
+knowingly, and say in your write-up that it is approximate.
+
+A test asserts `optimal_selection` never costs more than `feasible_selection`,
+on this dataset and on forty randomly generated curves. That property is the
+solver's entire justification, so it is pinned rather than assumed.
 
 ## What a MACC assumes
 

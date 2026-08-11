@@ -8,6 +8,7 @@ from .curve import (
     annuity_factor,
     build_curve,
     feasible_selection,
+    optimal_selection,
     render,
 )
 
@@ -21,5 +22,6 @@ __all__ = [
     "annuity_factor",
     "build_curve",
     "feasible_selection",
+    "optimal_selection",
     "render",
 ]

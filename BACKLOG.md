@@ -18,12 +18,12 @@ Rules of thumb applied to every item:
 ## Done
 
 - [x] **001 — carbon-bridge** · Additive LMDI-I decomposition of an emissions change into activity, mix, intensity and emission-factor effects. 37 tests, zero dependencies.
+- [x] **002 — target-path** · Absolute-contraction and intensity-convergence pathways, gap assessment, rebased required rate, cumulative budget. 27 tests, zero dependencies.
 
 ## Queue
 
 ### Emissions and energy
 
-- [ ] **002 — target-path** · Build SBTi-style absolute-contraction and intensity-convergence pathways from a base year, then score actual performance against them and report the gap in absolute terms.
 - [ ] **003 — scope2-dual** · Location-based vs market-based Scope 2 accounting side by side, with contractual instruments (PPAs, RECs, GOs) applied under GHG Protocol Scope 2 Guidance quality criteria.
 - [ ] **004 — marginal-abatement** · Build a MACC from a list of abatement measures: cost per tonne, cumulative abatement curve, and the ordering that actually clears a target at least cost.
 - [ ] **005 — energy-baseline** · Weather-normalise energy consumption against heating and cooling degree days so efficiency claims survive a mild winter.

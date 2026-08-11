@@ -13,6 +13,7 @@ needed it is declared in that project's `pyproject.toml` and nowhere else.
 | # | Project | What it does |
 | --- | --- | --- |
 | 001 | [carbon-bridge](projects/001-carbon-bridge) | Splits a change in emissions into activity, mix, energy-intensity and emission-factor effects (additive LMDI-I), so you can tell decarbonisation apart from a slow year. |
+| 002 | [target-path](projects/002-target-path) | Builds absolute-contraction and intensity-convergence target pathways, measures actuals against them, and reports the annual cut still needed after a slip. |
 
 ## Why these exist
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import random
 import unittest
 from pathlib import Path
 
@@ -192,6 +193,138 @@ class CompareTests(unittest.TestCase):
         self.assertEqual(len(rows), 2)
         self.assertGreater(rows[0][1], rows[1][1])  # endpoint
         self.assertGreater(rows[0][3], rows[1][3])  # budget
+
+
+class BudgetPreservingRebase(unittest.TestCase):
+    """Landing on the endpoint is not the same as staying inside the budget.
+
+    ``required_rate_from_here`` answers "what gets me to the target number".
+    ``budget_preserving_rate`` answers "what keeps cumulative emissions inside
+    what the pathway allowed". After an overshoot those are different numbers,
+    and the second is the one the atmosphere responds to.
+    """
+
+    def setUp(self):
+        self.pathway = absolute_contraction(100_000.0, 2020, 2030, 0.042)
+
+    def on_track_actuals(self, through=2025):
+        return {y: self.pathway.at(y).emissions for y in range(2020, through + 1)}
+
+    def test_spent_plus_remaining_reconstructs_the_budget(self):
+        # The trapezoidal rule is additive across a shared node, which is the
+        # only reason subtracting one from the other is meaningful.
+        for year in range(2021, 2030):
+            actuals = self.on_track_actuals(year)
+            a = assess(self.pathway, year, self.pathway.at(year).emissions)
+            self.assertAlmostEqual(
+                a.spent(actuals) + a.remaining_budget(actuals),
+                self.pathway.budget(), places=6, msg=str(year),
+            )
+
+    def test_on_track_the_two_rebasings_agree_exactly(self):
+        # If nothing has been overspent there is nothing to claw back, so the
+        # budget-preserving rate must collapse onto the endpoint rate.
+        for year in range(2021, 2030):
+            actuals = self.on_track_actuals(year)
+            a = assess(self.pathway, year, self.pathway.at(year).emissions)
+            self.assertAlmostEqual(
+                a.budget_preserving_rate(actuals),
+                a.required_rate_from_here(), places=9, msg=str(year),
+            )
+
+    def test_the_rebased_pathway_spends_exactly_the_remaining_budget(self):
+        # The conservation law: build the path the rate implies, integrate it,
+        # and it must come to the allowance that was left.
+        rng = random.Random(2026)
+        for _ in range(200):
+            year = rng.randint(2021, 2028)
+            actuals = self.on_track_actuals(year)
+            # Overspend by a random amount in one random year.
+            slipped = rng.randint(2021, year)
+            actuals[slipped] *= 1.0 + rng.uniform(0.0, 0.15)
+            a = assess(self.pathway, year, actuals[year])
+            try:
+                rebased = a.budget_preserving_pathway(actuals)
+            except TargetError:
+                continue          # infeasible cases are asserted separately
+            self.assertAlmostEqual(
+                rebased.budget(), a.remaining_budget(actuals), places=4,
+                msg=f"year {year}",
+            )
+
+    def test_an_overshoot_makes_the_budget_rate_strictly_stricter(self):
+        actuals = self.on_track_actuals(2025)
+        actuals[2023] *= 1.10
+        a = assess(self.pathway, 2025, actuals[2025])
+        self.assertGreater(
+            a.budget_preserving_rate(actuals), a.required_rate_from_here()
+        )
+
+    def test_undershooting_makes_it_looser(self):
+        actuals = self.on_track_actuals(2025)
+        actuals[2023] *= 0.90
+        a = assess(self.pathway, 2025, actuals[2025])
+        self.assertLess(
+            a.budget_preserving_rate(actuals), a.required_rate_from_here()
+        )
+
+    def test_the_rate_increases_monotonically_with_the_overshoot(self):
+        previous = None
+        for excess in (0.0, 0.02, 0.05, 0.10, 0.20):
+            actuals = self.on_track_actuals(2025)
+            actuals[2023] *= 1.0 + excess
+            a = assess(self.pathway, 2025, actuals[2025])
+            rate = a.budget_preserving_rate(actuals)
+            if previous is not None:
+                self.assertGreater(rate, previous, msg=str(excess))
+            previous = rate
+
+    def test_after_an_overshoot_the_endpoint_drops_below_the_original_target(self):
+        # Paying back the overspend means finishing lower than promised.
+        actuals = self.on_track_actuals(2025)
+        actuals[2023] *= 1.10
+        a = assess(self.pathway, 2025, actuals[2025])
+        rebased = a.budget_preserving_pathway(actuals)
+        self.assertLess(rebased.target_emissions, self.pathway.target_emissions)
+        self.assertEqual(rebased.target_year, self.pathway.target_year)
+
+    def test_a_spent_budget_is_reported_as_unrecoverable(self):
+        # Massive early overshoot: no future path claws it back.
+        actuals = self.on_track_actuals(2025)
+        for year in range(2021, 2026):
+            actuals[year] *= 3.0
+        a = assess(self.pathway, 2025, actuals[2025])
+        with self.assertRaises(TargetError) as ctx:
+            a.budget_preserving_pathway(actuals)
+        self.assertIn("cannot be preserved", str(ctx.exception))
+
+    def test_being_far_ahead_is_reported_rather_than_returned_as_a_pathway(self):
+        actuals = {y: self.pathway.at(y).emissions * 0.2 for y in range(2020, 2026)}
+        a = assess(self.pathway, 2025, actuals[2025])
+        self.assertLessEqual(a.budget_preserving_rate(actuals), 0.0)
+        with self.assertRaises(TargetError) as ctx:
+            a.budget_preserving_pathway(actuals)
+        self.assertIn("room to spare", str(ctx.exception))
+
+    def test_a_missing_year_is_refused_rather_than_skipped(self):
+        # Skipping a year would shrink the integral and understate the
+        # overspend -- the one direction this number must never err in.
+        actuals = self.on_track_actuals(2025)
+        del actuals[2023]
+        a = assess(self.pathway, 2025, actuals[2025])
+        with self.assertRaises(TargetError) as ctx:
+            a.spent(actuals)
+        self.assertIn("2023", str(ctx.exception))
+
+    def test_the_base_year_alone_has_spent_nothing(self):
+        a = assess(self.pathway, 2020, 100_000.0)
+        self.assertEqual(a.spent({2020: 100_000.0}), 0.0)
+
+    def test_rebasing_in_the_target_year_is_refused(self):
+        actuals = self.on_track_actuals(2030)
+        a = assess(self.pathway, 2030, actuals[2030])
+        with self.assertRaises(TargetError):
+            a.budget_preserving_rate(actuals)
 
 
 if __name__ == "__main__":

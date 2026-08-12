@@ -241,6 +241,99 @@ class Assessment:
         return overshoot
 
 
+    def spent(self, actuals: Mapping[int, float]) -> float:
+        """Cumulative emissions actually released from the base year to now.
+
+        Integrated the same way as :meth:`Pathway.budget`, so the two are
+        directly comparable. Every year from the base year to the assessment
+        year must be present: a gap would silently shrink the integral and make
+        the overspend look smaller than it was, which is the one direction this
+        number must never err in.
+        """
+        wanted = list(range(self.pathway.base_year, self.year + 1))
+        missing = [y for y in wanted if y not in actuals]
+        if missing:
+            raise TargetError(
+                "cannot integrate actual emissions: missing "
+                f"{', '.join(str(y) for y in missing)}. A missing year would "
+                "understate the carbon already spent."
+            )
+        values = [float(actuals[y]) for y in wanted]
+        if len(values) == 1:
+            return 0.0
+        return sum(values) - 0.5 * (values[0] + values[-1])
+
+    def remaining_budget(self, actuals: Mapping[int, float]) -> float:
+        """Original cumulative budget less what has already been spent.
+
+        The trapezoidal rule is additive across a shared node, so the original
+        budget splits exactly into the part before this year and the part
+        after. That is what makes this subtraction meaningful rather than
+        approximate.
+        """
+        return self.pathway.budget() - self.spent(actuals)
+
+    def budget_preserving_rate(self, actuals: Mapping[int, float]) -> float:
+        """Linear rate, on today's emissions, that stays inside the original budget.
+
+        :meth:`required_rate_from_here` rebases on the *endpoint*: it asks what
+        it takes to still arrive at the target number. That question ignores
+        the carbon already overspent, and the atmosphere responds to the area
+        under the curve, not to the last point on it. A company can land on its
+        target year exactly and have emitted far more than the pathway allowed.
+
+        This asks the other question: what rate keeps *cumulative* emissions
+        within the budget the original pathway implied. Closing the integral of
+        a linear path over the remaining ``n`` years gives
+
+            future budget = E_now · n · (1 − r·n/2)
+
+        so setting that equal to the remaining allowance ``R`` yields a closed
+        form, with no search:
+
+            r = (2/n) · (1 − R / (E_now · n))
+
+        A rate at or below zero is returned as-is and means the budget has room
+        for emissions to stay flat or rise; it is a real answer, not an error,
+        and callers that need a constructible pathway should use
+        :meth:`budget_preserving_pathway` instead.
+        """
+        years_left = self.pathway.target_year - self.year
+        if years_left <= 0:
+            raise TargetError("the target year has already been reached")
+        if self.actual <= 0:
+            raise TargetError("current emissions must be positive")
+        remaining = self.remaining_budget(actuals)
+        return (2.0 / years_left) * (1.0 - remaining / (self.actual * years_left))
+
+    def budget_preserving_pathway(self, actuals: Mapping[int, float]) -> Pathway:
+        """The budget-preserving path itself, rebased on today.
+
+        Raises rather than clamping when the budget cannot be preserved: if the
+        allowance is already spent, no future trajectory recovers it, and
+        saying so is more useful than returning a path to zero.
+        """
+        rate = self.budget_preserving_rate(actuals)
+        years_left = self.pathway.target_year - self.year
+        if rate <= 0:
+            raise TargetError(
+                f"cumulative emissions are inside the budget with room to spare: "
+                f"the budget-preserving rate is {rate:.2%}, i.e. emissions could "
+                "hold flat or rise. There is no contraction pathway to build."
+            )
+        if rate * years_left >= 1:
+            raise TargetError(
+                f"the budget cannot be preserved: it would take a {rate:.1%} "
+                f"annual cut over {years_left} years, which reaches zero or "
+                "below. The remaining allowance is "
+                f"{self.remaining_budget(actuals):,.1f} against current "
+                f"emissions of {self.actual:,.1f}."
+            )
+        return absolute_contraction(
+            self.actual, self.year, self.pathway.target_year, rate
+        )
+
+
 def assess(pathway: Pathway, year: int, actual: float) -> Assessment:
     """Compare actual emissions in ``year`` against the pathway."""
     if actual < 0:

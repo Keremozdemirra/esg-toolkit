@@ -116,12 +116,85 @@ plain argument for exactly that reason: pass `--rate` with the number from the
 criteria version you are actually working to. Retrieved August 2026 from
 [sciencebasedtargets.org](https://sciencebasedtargets.org/).
 
+## Endpoint or budget?
+
+Once you have slipped there are two different questions, and only one of them
+is usually asked.
+
+`required_rate_from_here()` answers *what gets me to the target number*. It
+rebases on today and ignores the carbon already overspent.
+
+`budget_preserving_rate(actuals)` answers *what keeps cumulative emissions
+inside what the pathway allowed*. The atmosphere responds to the area under the
+curve, not to the last point on it, and a company can land on its target year
+exactly having emitted far more than the path permitted.
+
+```python
+from target_path import absolute_contraction, assess
+
+pathway = absolute_contraction(100_000.0, 2020, 2030, 0.042)
+actuals = {...}                      # every year from the base year to now
+a = assess(pathway, 2025, actuals[2025])
+
+a.spent(actuals)                     # carbon released so far
+a.remaining_budget(actuals)          # what is left of the original budget
+a.required_rate_from_here()          # 5.74% -- lands on the endpoint
+a.budget_preserving_rate(actuals)    # 8.87% -- lands inside the budget
+a.budget_preserving_pathway(actuals) # the trajectory that does it
+```
+
+On a 4.2% pathway from 100,000 tCO2e in 2020, with overshoots of 12%, 10%, 6%
+and 3% in 2022–2025:
+
+```
+Original budget        790000.0
+Spent 2020-2025        473409.0
+Remaining allowance    316591.0
+Endpoint rate              5.74%
+Budget rate                8.87%
+Original 2030 target    58000.0
+Budget-preserving       45266.4
+Rebased path budget    316591.0
+```
+
+A four-year slip of a few percent a year turns a 5.7% annual cut into an 8.9%
+one, and moves the 2030 endpoint from 58,000 to 45,266 tCO2e. Paying back an
+overspend means finishing lower than you promised, and the endpoint-based
+number never shows that.
+
+**The closed form.** Integrating a linear path over the remaining `n` years
+gives `E_now · n · (1 − r·n/2)`, so setting that equal to the remaining
+allowance `R` solves directly:
+
+```
+r = (2/n) · (1 − R / (E_now · n))
+```
+
+No search, no iteration. The trapezoidal rule is additive across a shared node,
+so the original budget splits exactly into the part before this year and the
+part after — which is what makes subtracting one from the other meaningful
+rather than approximate. The tests assert that reconstruction for every year of
+the pathway, assert that the rebased path's own budget equals the remaining
+allowance across 200 randomised overshoots, and assert that with nothing
+overspent the two rebasings collapse onto the same number to nine places.
+
+Three situations raise rather than returning a misleading figure: a budget
+already spent (no future path recovers it), a position so far ahead that the
+rate comes out negative (emissions could rise, so there is no contraction path
+to build), and a gap in the actuals — a missing year would shrink the integral
+and understate the overspend, which is the one direction this number must never
+err in.
+
 ## What this is not
 
 It is not a validated SBTi submission tool, it does not implement the
 sector-specific SDA pathways, and it takes no view on whether your base year,
 boundary, or activity forecast is honest. It draws a line and tells you which
 side of it you are on.
+
+It also takes no view on whether an endpoint target or a budget target is the
+right commitment to have made. It computes both and shows you the gap between
+them.
 
 ## Licence
 

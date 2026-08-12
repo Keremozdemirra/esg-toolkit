@@ -18,7 +18,7 @@ Rules of thumb applied to every item:
 ## Done
 
 - [x] **001 — carbon-bridge** · Additive LMDI-I decomposition of an emissions change into activity, mix, intensity and emission-factor effects. 37 tests, zero dependencies.
-- [x] **002 — target-path** · Absolute-contraction and intensity-convergence pathways, gap assessment, rebased required rate, cumulative budget. 27 tests, zero dependencies.
+- [x] **002 — target-path** · Absolute-contraction and intensity-convergence pathways, gap assessment, rebased required rate, cumulative budget. Extended with budget-preserving rebasing: the closed-form rate that keeps cumulative emissions inside the original budget rather than merely landing on the endpoint, with the conservation law under test. 39 tests, zero dependencies.
 - [x] **003 — marginal-abatement** · Levelised cost of abatement, cost curve, carbon-price unlocking, a greedy solver and an exact one that provably never costs more. 46 tests, zero dependencies.
 
 ## Queue

@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cbam-embedded"
+version = "0.1.0"
+description = "Specific embedded emissions of CBAM goods from installation-level data, with precursor chain resolution."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+keywords = ["cbam", "embedded-emissions", "carbon-border", "eu", "esg"]
+dependencies = []
+
+[tool.setuptools.packages.find]
+include = ["cbam_embedded*"]

@@ -21,6 +21,8 @@ Rules of thumb applied to every item:
 - [x] **002 — target-path** · Absolute-contraction and intensity-convergence pathways, gap assessment, rebased required rate, cumulative budget. Extended with budget-preserving rebasing: the closed-form rate that keeps cumulative emissions inside the original budget rather than merely landing on the endpoint, with the conservation law under test. 39 tests, zero dependencies.
 - [x] **003 — marginal-abatement** · Levelised cost of abatement, cost curve, carbon-price unlocking, a greedy solver and an exact one that provably never costs more. 46 tests, zero dependencies.
 
+- [x] **004 — embedded-emissions** · Specific embedded emissions per tonne of a CBAM good, with topological precursor resolution, cycle detection, a runtime accounting-identity check and origin attribution that does not double count a shared precursor. Moved here from the cbam-calc repository, where it was built; CBAM is EU sustainability regulation and belongs under this roof rather than in a repository of its own. 36 tests, zero dependencies.
+
 ## Queue
 
 ### Emissions and energy
@@ -35,7 +37,7 @@ Rules of thumb applied to every item:
 - [ ] **008 — materiality-matrix** · Double-materiality assessment as data rather than a slide: impact and financial scores per topic, stakeholder weighting, sensitivity of the threshold, and an auditable trail of who scored what.
 - [ ] **009 — disclosure-diff** · Diff two sustainability reports and surface what changed: restated figures, dropped metrics, quietly moved baselines.
 - [ ] **010 — taxonomy-screen** · EU Taxonomy eligibility and alignment screening for a revenue/capex/opex breakdown, including the do-no-significant-harm gates and minimum safeguards checklist.
-- [ ] **011 — cbam-calc** · CBAM embedded-emissions calculation for imported goods, default values vs actual data, and the certificate cost under a given EU ETS price path.
+
 - [ ] **012 — dpp-schema** · Digital Product Passport data model: schema, validation and a round-trip export, built against the ESPR data requirements.
 - [ ] **013 — assurance-trail** · Turn a spreadsheet of sustainability figures into a numbered evidence register with sources, owners, calculation notes and open queries.
 
@@ -47,20 +49,36 @@ Rules of thumb applied to every item:
 
 ### Valuation and financial modelling
 
-- [ ] **017 — dcf-lab** · Transparent DCF: driver-based projection, WACC build-up, Gordon and exit-multiple terminal values, and a sensitivity grid that shows how little of the answer comes from the forecast period.
-- [ ] **018 — scenario-engine** · Define scenarios as named parameter overlays over a base model, run them all, and report the spread rather than a single point estimate.
 - [ ] **019 — carbon-price-var** · Value at risk from carbon pricing: exposure by scope and jurisdiction against a set of price paths, with the internal carbon price that would neutralise it.
 - [ ] **020 — green-premium** · Compare the all-in cost of a low-carbon option against its conventional alternative, and express the gap as a required carbon price.
 - [ ] **021 — payback-ladder** · Rank capital projects by discounted payback, IRR and abatement, and show where the three orderings disagree.
 - [ ] **022 — portfolio-optimiser** · Mean-variance optimisation with a carbon-intensity constraint, and the efficient frontier you give up to meet it.
-- [ ] **023 — waterfall** · Build a bridge chart from any two-period dataset — revenue, cost, headcount, emissions — with the arithmetic checked rather than hand-typed.
 
 ### Analysis and research tooling
 
-- [ ] **024 — cohort-retention** · Cohort tables and retention curves from a transaction log, with the survivorship traps flagged rather than hidden.
-- [ ] **025 — market-sizer** · Top-down and bottom-up market sizing side by side, forced to reconcile, with every assumption sourced.
-- [ ] **026 — benford-check** · Screen a set of reported figures against Benford's law and flag what deserves a second look, with an honest note on the method's false-positive rate.
-- [ ] **027 — survey-weights** · Post-stratification and raking for survey data, with design effect and effective sample size reported so nobody quotes a margin of error that does not exist.
-- [ ] **028 — unit-guard** · Catch unit errors in analytical spreadsheets: dimensional analysis over a formula graph, so kWh never gets added to MWh again.
 - [ ] **029 — sankey-flow** · Material and energy flow diagrams from a flow table, with the mass balance actually enforced.
-- [ ] **030 — assumption-log** · Extract hardcoded numbers from a model, register them with a source and a review date, and report which ones have gone stale.
+
+---
+
+## Moved out of this queue
+
+This backlog was the original list, and three repositories were carved out of it
+afterwards without it being pruned. The following items describe work that now
+belongs elsewhere. Two of them had already been built there, so leaving them
+here would have had the daily loop build the same thing twice.
+
+| Item | Now lives in | Status |
+| --- | --- | --- |
+| 017 — dcf-lab | `analyst-toolkit` | built there on 2026-08-19 |
+| 018 — scenario-engine | `analyst-toolkit` | queued there |
+| 023 — waterfall | `analyst-toolkit` | queued there |
+| 024 — cohort-retention | `analyst-toolkit` | queued there |
+| 025 — market-sizer | `analyst-toolkit` | built there |
+| 026 — benford-check | `analyst-toolkit` | moved there by this change |
+| 027 — survey-weights | `analyst-toolkit` | queued there |
+| 028 — unit-guard | `unitguard` | the whole repository is this |
+| 030 — assumption-log | `analyst-toolkit` | queued there |
+
+What remains here is deliberately sustainability and climate work. Where an item
+needs a general analytical tool, it uses the one in `analyst-toolkit` rather
+than growing its own; where it needs units, it uses `unitguard`.

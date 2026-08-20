@@ -15,6 +15,7 @@ needed it is declared in that project's `pyproject.toml` and nowhere else.
 | 001 | [carbon-bridge](projects/001-carbon-bridge) | Splits a change in emissions into activity, mix, energy-intensity and emission-factor effects (additive LMDI-I), so you can tell decarbonisation apart from a slow year. |
 | 002 | [target-path](projects/002-target-path) | Builds absolute-contraction and intensity-convergence target pathways, measures actuals against them, and reports the annual cut still needed after a slip — both to reach the endpoint and to stay inside the cumulative budget, which are not the same number. |
 | 003 | [marginal-abatement](projects/003-marginal-abatement) | Builds a marginal abatement cost curve, shows what a carbon price unlocks, and finds the cheapest feasible route to a target under exclusion and prerequisite constraints. |
+| 004 | [embedded-emissions](projects/004-embedded-emissions) | Specific embedded emissions per tonne of a CBAM good, resolving the precursor chain and keeping the direct and indirect streams separate throughout. Moved here from `cbam-calc`. |
 
 ## Why these exist
 

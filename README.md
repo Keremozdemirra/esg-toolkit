@@ -1,5 +1,7 @@
 # esg-toolkit
 
+[![tests](https://github.com/Keremozdemirra/esg-toolkit/actions/workflows/tests.yml/badge.svg)](https://github.com/Keremozdemirra/esg-toolkit/actions/workflows/tests.yml)
+
 Small, focused tools for sustainability and financial analysis. Each one does a
 single job that would otherwise be a fragile spreadsheet, and each one is
 self-contained: its own folder, its own README, its own tests, no shared

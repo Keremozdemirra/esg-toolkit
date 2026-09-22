@@ -47,6 +47,15 @@ projects/
 
 See [BACKLOG.md](BACKLOG.md).
 
+## Runs in the browser
+
+Each project here is also a case study on the author's site, with the method, the assumptions and what it refuses to answer, and a version that runs in the page:
+
+- [Marginal abatement cost curve](https://keremozdemir.de/cases/marginal-abatement/)
+- [Carbon bridge](https://keremozdemir.de/cases/carbon-bridge/)
+- [Target pathway](https://keremozdemir.de/cases/target-path/)
+- [Embedded emissions](https://keremozdemir.de/cases/embedded/)
+
 ## Licence
 
 MIT, per project. See [LICENSE](LICENSE).
